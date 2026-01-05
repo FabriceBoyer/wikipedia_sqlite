@@ -8,8 +8,9 @@ A high-performance Wikipedia dump parser and REST API server using SQLite for ef
 - **Low Memory Usage**: Efficiently processes large Wikipedia dumps with minimal memory footprint
 - **SQLite Storage**: Uses SQLite with FTS5 for fast full-text search
 - **REST API**: JSON-based API for searching and retrieving articles
-- **Web Interface**: Built-in demo page for testing and exploration
+- **Web Interface**: Built-in demo page for testing and exploration with browser history support
 - **Batch Processing**: Optimized batch inserts for fast indexing
+- **Browser History**: Full support for back/forward navigation and shareable URLs
 
 ## Prerequisites
 
@@ -49,9 +50,22 @@ go run . -load-index -limit 10000
 go run . -process-articles -limit 1000
 ```
 
+### Building the Frontend
+
+The frontend is a React application built with Vite. Build it before running the server:
+
+```bash
+cd frontend
+npm install
+npm run build
+cd ..
+```
+
+This will build the React app and output it to the `static/` directory.
+
 ### Running the Server
 
-After preprocessing, start the server:
+After preprocessing and building the frontend, start the server:
 
 ```bash
 go run .
@@ -64,7 +78,62 @@ go build -o wikipedia_sqlite .
 ./wikipedia_sqlite
 ```
 
-The server will start on port 9096. Navigate to http://localhost:9096 to access the web interface.
+The server will start on port 9096. Navigate to <http://localhost:9096> to access the web interface.
+
+### Development Mode
+
+For frontend development with hot reload:
+
+```bash
+# Terminal 1: Start Go backend
+go run .
+
+# Terminal 2: Start React dev server
+cd frontend
+npm install
+npm run dev
+```
+
+The React dev server runs on `http://localhost:5173` and proxies API requests to the Go backend.
+
+### Web Interface
+
+The web interface provides a modern, responsive design with the following features:
+
+- **Gradient Background**: Beautiful purple gradient design
+- **Real-time Search**: Instant search as you type (Enter key support)
+- **Article Navigation**: Click any result to view the full article
+- **Browser History**: Full back/forward button support with shareable URLs
+- **Responsive Design**: Works on desktop and mobile devices
+
+#### Screenshots
+
+> **Note**: To add screenshots, capture the web interface and save them in `docs/screenshots/` with the filenames below. See `docs/screenshots/README.md` for detailed instructions.
+
+**Main Search Page** (`docs/screenshots/home.png`)
+
+- The clean, modern search interface with gradient background and intuitive search box
+
+**Search Results** (`docs/screenshots/search-results.png`)
+
+- Search results showing matching article titles with hover effects
+
+**Article View** (`docs/screenshots/article-view.png`)
+
+- Full article content display with metadata and navigation
+
+Once screenshots are added, uncomment the image tags below:
+
+<!--
+![Main Search Page](docs/screenshots/home.png)
+*The clean, modern search interface with gradient background and intuitive search box.*
+
+![Search Results](docs/screenshots/search-results.png)
+*Search results showing matching article titles with hover effects.*
+
+![Article View](docs/screenshots/article-view.png)
+*Full article content display with metadata and navigation.*
+-->
 
 ## API Endpoints
 
@@ -77,15 +146,18 @@ GET /api/search?q=<query>&limit=<limit>
 Search for article titles using full-text search.
 
 **Parameters:**
+
 - `q` (required): Search query
 - `limit` (optional): Maximum number of results (default: 20)
 
 **Example:**
+
 ```bash
 curl "http://localhost:9096/api/search?q=python&limit=10"
 ```
 
 **Response:**
+
 ```json
 {
   "query": "python",
@@ -103,14 +175,17 @@ GET /api/article?title=<title>
 Retrieve an article by its title.
 
 **Parameters:**
+
 - `title` (required): Article title
 
 **Example:**
+
 ```bash
 curl "http://localhost:9096/api/article?title=Python%20(programming%20language)"
 ```
 
 **Response:**
+
 ```json
 {
   "id": 12345,
@@ -130,6 +205,7 @@ GET /api/article/<id>
 Retrieve an article by its ID.
 
 **Example:**
+
 ```bash
 curl "http://localhost:9096/api/article/12345"
 ```
@@ -180,5 +256,3 @@ docker-compose run --rm wikipedia_sqlite /server -process-articles
 ## License
 
 See LICENSE file for details.
-
-
