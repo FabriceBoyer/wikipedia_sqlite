@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wikipedia SQLite Search</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .search-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 15px 20px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-input:focus {
+            border-color: #667eea;
+        }
+
+        .search-btn {
+            padding: 15px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .search-btn:hover {
+            background: #5568d3;
+        }
+
+        .search-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .results-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            min-height: 200px;
+        }
+
+        .results-header {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 1.2em;
+        }
+
+        .results-list {
+            list-style: none;
+        }
+
+        .result-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-left: 4px solid transparent;
+        }
+
+        .result-item:hover {
+            background: #e9ecef;
+            border-left-color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .result-item-title {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .article-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-top: 30px;
+        }
+
+        .article-header {
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .article-title {
+            font-size: 2em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .article-meta {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .article-content {
+            line-height: 1.8;
+            color: #333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c33;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+
+        .back-btn:hover {
+            background: #5568d3;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 Wikipedia SQLite</h1>
+            <p>Search and browse Wikipedia articles</p>
+        </div>
+
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search Wikipedia articles..." autocomplete="off">
+                <button class="search-btn" id="searchBtn" onclick="performSearch()">Search</button>
+            </div>
+            <div id="errorContainer"></div>
+        </div>
+
+        <div id="resultsContainer" class="results-container hidden">
+            <div class="results-header" id="resultsHeader"></div>
+            <ul class="results-list" id="resultsList"></ul>
+        </div>
+
+        <div id="articleContainer" class="article-container hidden">
+            <a href="#" class="back-btn" onclick="showSearch(); return false;">← Back to Search</a>
+            <div class="article-header">
+                <h2 class="article-title" id="articleTitle"></h2>
+                <div class="article-meta" id="articleMeta"></div>
+            </div>
+            <div class="article-content" id="articleContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+
+        function showError(message) {
+            const container = document.getElementById('errorContainer');
+            container.innerHTML = `<div class="error">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        function showSearch() {
+            document.getElementById('resultsContainer').classList.remove('hidden');
+            document.getElementById('articleContainer').classList.add('hidden');
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                showError('Please enter a search query');
+                return;
+            }
+
+            const searchBtn = document.getElementById('searchBtn');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const resultsList = document.getElementById('resultsList');
+            const resultsHeader = document.getElementById('resultsHeader');
+
+            searchBtn.disabled = true;
+            searchBtn.textContent = 'Searching...';
+            resultsList.innerHTML = '<li class="loading">Searching...</li>';
+            resultsContainer.classList.remove('hidden');
+            document.getElementById('articleContainer').classList.add('hidden');
+
+            try {
+                const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}&limit=20`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+
+                resultsHeader.textContent = `Found ${data.count} result${data.count !== 1 ? 's' : ''} for "${data.query}"`;
+                resultsList.innerHTML = '';
+
+                if (data.results.length === 0) {
+                    resultsList.innerHTML = '<li class="loading">No results found</li>';
+                } else {
+                    data.results.forEach(title => {
+                        const li = document.createElement('li');
+                        li.className = 'result-item';
+                        li.innerHTML = `<div class="result-item-title">${escapeHtml(title)}</div>`;
+                        li.onclick = () => loadArticle(title);
+                        resultsList.appendChild(li);
+                    });
+                }
+            } catch (error) {
+                showError(`Search failed: ${error.message}`);
+                resultsList.innerHTML = '<li class="loading">Error loading results</li>';
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = 'Search';
+            }
+        }
+
+        async function loadArticle(title) {
+            const articleContainer = document.getElementById('articleContainer');
+            const articleTitle = document.getElementById('articleTitle');
+            const articleMeta = document.getElementById('articleMeta');
+            const articleContent = document.getElementById('articleContent');
+
+            articleContainer.classList.remove('hidden');
+            document.getElementById('resultsContainer').classList.add('hidden');
+            articleTitle.textContent = 'Loading...';
+            articleContent.textContent = 'Loading article...';
+
+            try {
+                const response = await fetch(`${API_BASE}/article?title=${encodeURIComponent(title)}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const article = await response.json();
+
+                articleTitle.textContent = article.title;
+                articleMeta.textContent = `Article ID: ${article.id} | Namespace: ${article.namespace}`;
+
+                if (article.redirect) {
+                    articleContent.textContent = `This article redirects to: ${article.redirect}`;
+                } else {
+                    // Show first 5000 characters of content
+                    const content = article.content || 'No content available';
+                    articleContent.textContent = content.length > 5000
+                        ? content.substring(0, 5000) + '\n\n[... content truncated ...]'
+                        : content;
+                }
+            } catch (error) {
+                showError(`Failed to load article: ${error.message}`);
+                articleTitle.textContent = 'Error';
+                articleContent.textContent = 'Failed to load article content';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Allow Enter key to trigger search
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,18 @@
+version: '3.7'
+
+services:
+
+    wikipedia_sqlite:
+        build:
+            context: .
+            target: final
+        container_name: wikipedia_sqlite
+        restart: unless-stopped
+        ports:
+            - 9096:9096
+        environment:
+            - DUMP_PATH=/dump
+        volumes:
+            - $DUMP_PATH:/dump
+            # - ./static:/static
+
