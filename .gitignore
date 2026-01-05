@@ -29,4 +29,10 @@ __debug*
 # Build artifacts
 wikipedia_sqlite
 
+# Frontend build artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/*.log
+
 

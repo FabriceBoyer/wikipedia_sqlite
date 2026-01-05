@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/fabriceboyer/common_go_utils/utils"
@@ -88,14 +89,30 @@ func main() {
 func handleRequests() {
 	router := mux.NewRouter().StrictSlash(true)
 
-	// Serve static files
-	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
-	router.Handle("/", http.FileServer(http.Dir("./static")))
+	// API endpoints (must be before static file serving)
+	apiRouter := router.PathPrefix("/api").Subrouter()
+	apiRouter.HandleFunc("/search", utils.ErrorHandler(handleSearch))
+	apiRouter.HandleFunc("/article", utils.ErrorHandler(handleGetArticle))
+	apiRouter.HandleFunc("/article/{id:[0-9]+}", utils.ErrorHandler(handleGetArticleByID))
 
-	// API endpoints
-	router.HandleFunc("/api/search", utils.ErrorHandler(handleSearch))
-	router.HandleFunc("/api/article", utils.ErrorHandler(handleGetArticle))
-	router.HandleFunc("/api/article/{id:[0-9]+}", utils.ErrorHandler(handleGetArticleByID))
+	// Serve static files (React app)
+	staticDir := "./static"
+	fileServer := http.FileServer(http.Dir(staticDir))
+
+	// Serve static assets
+	router.PathPrefix("/assets/").Handler(http.StripPrefix("/", fileServer))
+
+	// Serve index.html for all other routes (SPA routing)
+	router.PathPrefix("/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check if file exists
+		path := filepath.Join(staticDir, r.URL.Path)
+		if _, err := os.Stat(path); err == nil && r.URL.Path != "/" {
+			fileServer.ServeHTTP(w, r)
+		} else {
+			// Serve index.html for SPA routing
+			http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
+		}
+	})
 
 	log.Fatal(http.ListenAndServe(":9096", router))
 }
@@ -122,7 +139,7 @@ func handleSearch(w http.ResponseWriter, r *http.Request) error {
 
 	w.Header().Set("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(map[string]interface{}{
-		"query":  query,
+		"query":   query,
 		"results": titles,
 		"count":   len(titles),
 	})
@@ -164,4 +181,3 @@ func handleGetArticleByID(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(article)
 }
-

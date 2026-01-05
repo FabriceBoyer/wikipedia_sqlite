@@ -1,3 +1,12 @@
+# Build frontend
+FROM node:20-alpine AS frontend-build
+WORKDIR /frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ .
+RUN npm run build
+
+# Build Go backend
 ARG GO_VERSION=1.22
 FROM golang:${GO_VERSION} AS build
 WORKDIR /src
@@ -9,6 +18,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
 
 RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,target=. \
+    --mount=from=frontend-build,source=/frontend/dist,target=/static \
     CGO_ENABLED=1 go build -tags sqlite_fts5 -o /bin/server .
 
 #################################################
@@ -35,7 +45,7 @@ RUN adduser \
 USER appuser
 
 COPY --from=build /bin/server /
-COPY ./static /static
+COPY --from=frontend-build /frontend/dist /static
 COPY ./.env.example /.env
 
 EXPOSE 9096
