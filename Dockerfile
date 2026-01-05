@@ -9,7 +9,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
 
 RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,target=. \
-    CGO_ENABLED=1 go build -o /bin/server .
+    CGO_ENABLED=1 go build -tags sqlite_fts5 -o /bin/server .
 
 #################################################
 

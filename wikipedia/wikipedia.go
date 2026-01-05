@@ -78,6 +78,9 @@ func (w *Wiki) Open() error {
 		return fmt.Errorf("failed to set cache size: %w", err)
 	}
 
+	// Check SQLite compile options to see if FTS5 is available
+	w.checkFTS5Availability()
+
 	// Create tables
 	if err := w.createTables(); err != nil {
 		return fmt.Errorf("failed to create tables: %w", err)
@@ -96,6 +99,45 @@ func (w *Wiki) Close() error {
 		return w.db.Close()
 	}
 	return nil
+}
+
+// checkFTS5Availability checks if FTS5 is available in the SQLite build
+func (w *Wiki) checkFTS5Availability() {
+	rows, err := w.db.Query("PRAGMA compile_options")
+	if err != nil {
+		log.Printf("Warning: Could not check SQLite compile options: %v", err)
+		return
+	}
+	defer rows.Close()
+
+	var options []string
+	for rows.Next() {
+		var option string
+		if err := rows.Scan(&option); err != nil {
+			continue
+		}
+		options = append(options, option)
+	}
+
+	hasFTS5 := false
+	for _, opt := range options {
+		if strings.Contains(strings.ToUpper(opt), "FTS5") || strings.Contains(strings.ToUpper(opt), "ENABLE_FTS5") {
+			hasFTS5 = true
+			break
+		}
+	}
+
+	if !hasFTS5 {
+		log.Printf("WARNING: FTS5 is not available in this SQLite build.")
+		log.Printf("SQLite compile options: %v", options)
+		log.Printf("To enable FTS5:")
+		log.Printf("  1. Rebuild go-sqlite3 with: go build -tags sqlite_fts5")
+		log.Printf("  2. Or use a system SQLite compiled with --enable-fts5")
+		log.Printf("  3. Or use the sqlite_use_icu build tag for go-sqlite3")
+		log.Printf("Falling back to FTS4 or LIKE queries.")
+	} else {
+		log.Printf("FTS5 is available in SQLite build")
+	}
 }
 
 // createTables creates the necessary database tables
