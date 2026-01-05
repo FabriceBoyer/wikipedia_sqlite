@@ -218,7 +218,7 @@
         </div>
 
         <div id="articleContainer" class="article-container hidden">
-            <a href="#" class="back-btn" onclick="showSearch(); return false;">← Back to Search</a>
+            <a href="#" class="back-btn" id="backBtn">← Back to Search</a>
             <div class="article-header">
                 <h2 class="article-title" id="articleTitle"></h2>
                 <div class="article-meta" id="articleMeta"></div>
@@ -229,6 +229,41 @@
 
     <script>
         const API_BASE = '/api';
+        let currentState = { view: 'search', query: '', articleTitle: '' };
+
+        // Initialize: check if there's a state in the URL or restore from history
+        window.addEventListener('DOMContentLoaded', function() {
+            // Initialize initial state if not already set
+            if (!window.history.state) {
+                window.history.replaceState(currentState, '', '/');
+            }
+
+            // Check URL parameters on page load
+            const urlParams = new URLSearchParams(window.location.search);
+            const articleParam = urlParams.get('article');
+            const queryParam = urlParams.get('q');
+
+            if (articleParam) {
+                // Load article from URL
+                loadArticle(articleParam, false);
+            } else if (queryParam) {
+                // Load search from URL
+                document.getElementById('searchInput').value = queryParam;
+                performSearch(false);
+            }
+
+            // Handle browser back/forward buttons
+            window.addEventListener('popstate', function(event) {
+                if (event.state) {
+                    restoreState(event.state);
+                } else {
+                    // No state, show search view
+                    showSearch();
+                    document.getElementById('searchInput').value = '';
+                    currentState = { view: 'search', query: '', articleTitle: '' };
+                }
+            });
+        });
 
         function showError(message) {
             const container = document.getElementById('errorContainer');
@@ -241,9 +276,23 @@
         function showSearch() {
             document.getElementById('resultsContainer').classList.remove('hidden');
             document.getElementById('articleContainer').classList.add('hidden');
+            currentState.view = 'search';
         }
 
-        async function performSearch() {
+        function restoreState(state) {
+            currentState = state;
+            if (state.view === 'article' && state.articleTitle) {
+                loadArticle(state.articleTitle, false);
+            } else if (state.view === 'search' && state.query) {
+                document.getElementById('searchInput').value = state.query;
+                performSearch(false);
+            } else {
+                showSearch();
+                document.getElementById('searchInput').value = '';
+            }
+        }
+
+        async function performSearch(pushState = true) {
             const query = document.getElementById('searchInput').value.trim();
             if (!query) {
                 showError('Please enter a search query');
@@ -260,6 +309,13 @@
             resultsList.innerHTML = '<li class="loading">Searching...</li>';
             resultsContainer.classList.remove('hidden');
             document.getElementById('articleContainer').classList.add('hidden');
+
+            // Update state and push to history
+            const state = { view: 'search', query: query, articleTitle: '' };
+            currentState = state;
+            if (pushState) {
+                window.history.pushState(state, '', `?q=${encodeURIComponent(query)}`);
+            }
 
             try {
                 const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}&limit=20`);
@@ -291,7 +347,7 @@
             }
         }
 
-        async function loadArticle(title) {
+        async function loadArticle(title, pushState = true) {
             const articleContainer = document.getElementById('articleContainer');
             const articleTitle = document.getElementById('articleTitle');
             const articleMeta = document.getElementById('articleMeta');
@@ -301,6 +357,13 @@
             document.getElementById('resultsContainer').classList.add('hidden');
             articleTitle.textContent = 'Loading...';
             articleContent.textContent = 'Loading article...';
+
+            // Update state and push to history
+            const state = { view: 'article', query: currentState.query || '', articleTitle: title };
+            currentState = state;
+            if (pushState) {
+                window.history.pushState(state, '', `?article=${encodeURIComponent(title)}`);
+            }
 
             try {
                 const response = await fetch(`${API_BASE}/article?title=${encodeURIComponent(title)}`);
@@ -337,7 +400,19 @@
         // Allow Enter key to trigger search
         document.getElementById('searchInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                performSearch();
+                performSearch(true);
+            }
+        });
+
+        // Update back button to use history
+        document.getElementById('backBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                // If no history, just show search
+                showSearch();
+                window.history.replaceState({ view: 'search', query: '', articleTitle: '' }, '', '/');
             }
         });
     </script>
