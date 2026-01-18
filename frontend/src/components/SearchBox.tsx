@@ -44,3 +44,4 @@ export function SearchBox({ onSearch, initialQuery = '', isLoading = false }: Se
   );
 }
 
+

@@ -28,3 +28,4 @@ To add screenshots, please capture the following views:
 - Keep file sizes reasonable (< 500KB each)
 - Use descriptive filenames
 
+

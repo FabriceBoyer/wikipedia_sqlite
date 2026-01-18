@@ -35,3 +35,4 @@ export function SearchResults({ data, onArticleClick }: SearchResultsProps) {
   );
 }
 
+

@@ -92,3 +92,4 @@ FTS5 not available, trying FTS4: ...
 
 FTS5 is generally faster and more feature-rich than FTS4, but FTS4 will work fine for most use cases. The application automatically falls back to FTS4 or LIKE queries if FTS5 is not available.
 
+

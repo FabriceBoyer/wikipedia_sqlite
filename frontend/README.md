@@ -51,3 +51,4 @@ frontend/
 - **Modern CSS** with component-based styling
 - **Type-safe API client** with TypeScript
 
+
